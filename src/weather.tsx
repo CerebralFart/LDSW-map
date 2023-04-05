@@ -7,6 +7,8 @@ const WeatherPanel: React.FC<{
 }> = ({date, time}) => {
     const [data, setData] = useState<({ relation: string, rendered: string })[]>([]);
     useEffect(() => {
+        setData([]);
+        
         query<'relation' | 'rendered'>('knmi',
             "PREFIX knmi: <http://ld.sven.mol.it/knmi#>" +
             "PREFIX om2: <http://www.ontology-of-units-of-measure.org/resource/om-2/>" +
@@ -22,15 +24,15 @@ const WeatherPanel: React.FC<{
             "  }." +
             "  BIND(COALESCE(?nodeValue, ?node) AS ?rendered)." +
             "}"
-        ).then(data =>{
+        ).then(data => {
             data = data.filter(node => node.rendered && node.relation.startsWith('http://ld.sven.mol.it/'));
             data = data.map(({relation, rendered}) => ({
-                    relation: relation.split("#")[1],
-                    rendered: rendered.indexOf('#') === -1 ? rendered : rendered.split('#')[1],
-                }));
+                relation: relation.split("#")[1],
+                rendered: rendered.indexOf('#') === -1 ? rendered : rendered.split('#')[1],
+            }));
             data.sort((a, b) => a.relation.localeCompare(b.relation))
             setData(data);
-        }        );
+        });
     }, [date, time]);
 
     if (data.length === 0) return <p className="text-center italic">Loading</p>
