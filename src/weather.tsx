@@ -22,13 +22,15 @@ const WeatherPanel: React.FC<{
             "  }." +
             "  BIND(COALESCE(?nodeValue, ?node) AS ?rendered)." +
             "}"
-        ).then(data => setData(data
-            .filter(node => node.rendered && node.relation.startsWith('http://ld.sven.mol.it/'))
-            .map(({relation, rendered}) => ({
-                relation: relation.split("#")[1],
-                rendered: rendered.indexOf('#') === -1 ? rendered : rendered.split('#')[1],
-            }))
-        ));
+        ).then(data =>{
+            data = data.filter(node => node.rendered && node.relation.startsWith('http://ld.sven.mol.it/'));
+            data = data.map(({relation, rendered}) => ({
+                    relation: relation.split("#")[1],
+                    rendered: rendered.indexOf('#') === -1 ? rendered : rendered.split('#')[1],
+                }));
+            data.sort((a, b) => a.relation.localeCompare(b.relation))
+            setData(data);
+        }        );
     }, [date, time]);
 
     if (data.length === 0) return <p className="text-center italic">Loading</p>
