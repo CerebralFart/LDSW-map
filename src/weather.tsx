@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from "react";
 import query from "./query";
 
-const Weather: React.FC<{
+const WeatherPanel: React.FC<{
     date: string,
     time: string
 }> = ({date, time}) => {
@@ -44,4 +44,4 @@ const Weather: React.FC<{
     </table>;
 };
 
-export default Weather;
+export default WeatherPanel;

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {Map} from 'react-map-gl';
 import maplibregl from 'maplibre-gl';
@@ -9,40 +9,29 @@ import {ground} from "./layers";
 import {lights} from "./lights";
 
 import './index.css'
+import query from "./query";
+import WeatherPanel from "./weather";
 
-const INVISIBLE = [0, 0, 0, 0];
-
-const QUERY =
-    fetch('https://ld.sven.mol.it/mazemap/sparql', {
-        method: 'POST',
-        mode: 'cors',
-        headers: {
-            contentType: 'application/x-www-form-urlencoded'
-        },
-        body: new URLSearchParams({
-            query:
-                "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>" +
-                "PREFIX mazemap: <http://ld.sven.mol.it/mazemap#>" +
-                "SELECT ?name ?floors ?geometry WHERE {" +
-                "?bldg rdf:type mazemap:Building;" +
-                "      mazemap:name ?name;" +
-                "      mazemap:floors ?floors;" +
-                "      mazemap:geometry ?geometry." +
-                "} LIMIT 25"
-        })
-    })
-        .then(rq => rq.json())
-        .then(data => ({
-            type: "FeatureCollection",
-            features: data.results.bindings.map(building => ({
-                type: "Feature",
-                geometry: JSON.parse(building.geometry.value),
-                properties: {
-                    floors: building.name.value === "Horst Complex" ? 2 : building.floors.value,
-                    name: building.name.value
-                }
-            }))
-        }))
+const QUERY = query('mazemap',
+    "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>" +
+    "PREFIX mazemap: <http://ld.sven.mol.it/mazemap#>" +
+    "SELECT ?name ?floors ?geometry WHERE {" +
+    "?bldg rdf:type mazemap:Building;" +
+    "      mazemap:name ?name;" +
+    "      mazemap:floors ?floors;" +
+    "      mazemap:geometry ?geometry." +
+    "} LIMIT 25"
+).then(data => ({
+    type: "FeatureCollection",
+    features: data.map(building => ({
+        type: "Feature",
+        geometry: JSON.parse(building.geometry),
+        properties: {
+            floors: building.name === "Horst Complex" ? 2 : building.floors,
+            name: building.name
+        }
+    }))
+}))
 
 export const COLOR_SCALE = scaleThreshold()
     .domain([-0.6, -0.45, -0.3, -0.15, 0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1.05, 1.2])
@@ -85,8 +74,6 @@ function getTooltip({object}) {
 }
 
 export default function App({data = QUERY, mapStyle = MAP_STYLE}) {
-
-
     const layers = [
         // only needed when using shadows - a plane for shadows to drop on
         ground,
@@ -125,13 +112,13 @@ export default function App({data = QUERY, mapStyle = MAP_STYLE}) {
             [DATE]
             [TIME]
             <hr className="my-2"/>
-            <Weather date="2023-03-22" time="12"/>
+            <WeatherPanel date="2023-03-22" time="12"/>
             <hr className="my-2"/>
             <div className="text-center italic">Select a building for more information</div>
         </div>
     </div>;
 }
 
-export function renderToDOM(container) {
+export function renderToDOM(container: HTMLElement) {
     createRoot(container).render(<App/>);
 }
