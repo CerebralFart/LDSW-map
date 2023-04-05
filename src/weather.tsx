@@ -5,7 +5,7 @@ const WeatherPanel: React.FC<{
     date: string,
     time: string
 }> = ({date, time}) => {
-    const [data, setData] = useState<({ relation: string, rendered: string })[]>(null);
+    const [data, setData] = useState<({ relation: string, rendered: string })[]>([]);
     useEffect(() => {
         query<'relation' | 'rendered'>('knmi',
             "PREFIX knmi: <http://ld.sven.mol.it/knmi#>" +
@@ -31,7 +31,7 @@ const WeatherPanel: React.FC<{
         ));
     }, [date, time]);
 
-    if (data === null) return <p className="text-center italic">Loading</p>
+    if (data.length === 0) return <p className="text-center italic">Loading</p>
     else return <table>
         <tbody>
         {data.map(({relation, rendered}) => (
