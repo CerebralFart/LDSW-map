@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {Map} from 'react-map-gl';
 import maplibregl from 'maplibre-gl';
@@ -6,13 +6,13 @@ import DeckGL from '@deck.gl/react';
 import {GeoJsonLayer} from '@deck.gl/layers';
 import {scaleThreshold} from 'd3-scale';
 import {ground} from "./layers";
-import {lights} from "./lights";
 
 import './index.css'
 import query from "./query";
 import WeatherPanel from "./weather";
 import Select from "./select";
 import {leftPad} from "./util";
+import {LightingEffect, AmbientLight, _SunLight as SunLight} from "@deck.gl/core";
 
 const QUERY = query<'floors' | 'geometry' | 'name'>('mazemap',
     "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>" +
@@ -75,11 +75,30 @@ function getTooltip({object}) {
     );
 }
 
+const ambientLight = new AmbientLight({
+    color: [255, 255, 255],
+    intensity: 1.0
+});
+const dirLight = new SunLight({
+    timestamp: new Date(),
+    color: [255, 255, 255],
+    intensity: 1.0,
+    _shadow: true
+});
+const effect = new LightingEffect({ambientLight, dirLight});
+effect.shadowColor = [0, 0, 0, 0.3];
+
 export default function App({data = QUERY, mapStyle = MAP_STYLE}) {
+    const [cnt, setCnt] = useState(0);
     const [day, setDay] = useState(22);
     const [month, setMonth] = useState(3);
     const [year, setYear] = useState(2023);
     const [time, setTime] = useState(12);
+
+    useEffect(() => {
+        dirLight.timestamp = new Date(`${year}-${leftPad(month.toString(), '0', 2)}-${leftPad(day.toString(), '0', 2)}T${leftPad(time.toString(), '0', 2)}:00:00Z`)
+        setCnt(cnt + 1);
+    }, [day, month, year, time]);
 
     const layers = [
         // only needed when using shadows - a plane for shadows to drop on
@@ -106,7 +125,7 @@ export default function App({data = QUERY, mapStyle = MAP_STYLE}) {
         <div className="relative flex-grow">
             <DeckGL
                 layers={layers}
-                effects={lights}
+                effects={[effect]}
                 initialViewState={INITIAL_VIEW_STATE}
                 controller={true}
                 getTooltip={getTooltip}
