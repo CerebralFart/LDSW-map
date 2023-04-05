@@ -108,18 +108,28 @@ export default function App({data = QUERY, mapStyle = MAP_STYLE}) {
         })
     ];
 
-    return (
-        <DeckGL
-            layers={layers}
-            effects={lights}
-            initialViewState={INITIAL_VIEW_STATE}
-            controller={true}
-            getTooltip={getTooltip}
-            onClick={console.log}
-        >
-            <Map reuseMaps mapLib={maplibregl} mapStyle={mapStyle} preventStyleDiffing={true}/>
-        </DeckGL>
-    );
+    return <div className="w-full h-full flex flex-row">
+        <div className="relative flex-grow">
+            <DeckGL
+                layers={layers}
+                effects={lights}
+                initialViewState={INITIAL_VIEW_STATE}
+                controller={true}
+                getTooltip={getTooltip}
+                onClick={console.log}
+            >
+                <Map reuseMaps mapLib={maplibregl} mapStyle={mapStyle} preventStyleDiffing={true}/>
+            </DeckGL>
+        </div>
+        <div className="w-96 bg-gray-700 text-white">
+            [DATE]
+            [TIME]
+            <hr className="my-2"/>
+            <Weather date="2023-03-22" time="12"/>
+            <hr className="my-2"/>
+            <div className="text-center italic">Select a building for more information</div>
+        </div>
+    </div>;
 }
 
 export function renderToDOM(container) {
