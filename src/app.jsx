@@ -8,6 +8,8 @@ import {scaleThreshold} from 'd3-scale';
 import {ground} from "./layers";
 import {lights} from "./lights";
 
+import './index.css'
+
 const INVISIBLE = [0, 0, 0, 0];
 
 const QUERY =
