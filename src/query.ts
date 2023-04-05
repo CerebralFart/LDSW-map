@@ -1,4 +1,4 @@
-async function query(dataset: string, query: string): Promise<any> {
+async function query<T extends string = string>(dataset: string, query: string): Promise<({ [key in T]: string })[]> {
     const rq = await fetch(`https://ld.sven.mol.it/${dataset}/sparql`, {
         method: 'POST',
         mode: 'cors',
@@ -10,14 +10,14 @@ async function query(dataset: string, query: string): Promise<any> {
 
     const {results: {bindings}} = await rq.json();
 
-    const results: ({ [key: string]: any })[] = [];
+    const results: ({ [key in T]: string })[] = [];
     bindings.forEach((result: { [key: string]: any }) => {
         const row: { [key: string]: any } = {};
         for (const key in result) {
             const node = result[key];
             if (node.type === 'literal' || node.type === 'uri') row[key] = node.value;
         }
-        results.push(row);
+        results.push(row as { [key in T]: string });
     })
 
     return results;

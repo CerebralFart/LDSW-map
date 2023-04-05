@@ -12,14 +12,14 @@ import './index.css'
 import query from "./query";
 import WeatherPanel from "./weather";
 
-const QUERY = query('mazemap',
+const QUERY = query<'floors' | 'geometry' | 'name'>('mazemap',
     "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>" +
     "PREFIX mazemap: <http://ld.sven.mol.it/mazemap#>" +
     "SELECT ?name ?floors ?geometry WHERE {" +
     "?bldg rdf:type mazemap:Building;" +
-    "      mazemap:name ?name;" +
     "      mazemap:floors ?floors;" +
-    "      mazemap:geometry ?geometry." +
+    "      mazemap:geometry ?geometry;" +
+    "      mazemap:name ?name." +
     "} LIMIT 25"
 ).then(data => ({
     type: "FeatureCollection",
@@ -27,7 +27,7 @@ const QUERY = query('mazemap',
         type: "Feature",
         geometry: JSON.parse(building.geometry),
         properties: {
-            floors: building.name === "Horst Complex" ? 2 : building.floors,
+            floors: building.name === "Horst Complex" ? 2 : parseInt(building.floors),
             name: building.name
         }
     }))

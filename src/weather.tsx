@@ -7,7 +7,7 @@ const WeatherPanel: React.FC<{
 }> = ({date, time}) => {
     const [data, setData] = useState<({ relation: string, rendered: string })[]>(null);
     useEffect(() => {
-        query('knmi',
+        query<'relation' | 'rendered'>('knmi',
             "PREFIX knmi: <http://ld.sven.mol.it/knmi#>" +
             "PREFIX om2: <http://www.ontology-of-units-of-measure.org/resource/om-2/>" +
             "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>" +
