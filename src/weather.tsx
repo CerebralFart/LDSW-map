@@ -3,7 +3,7 @@ import query from "./query";
 
 const WeatherPanel: React.FC<{
     date: string,
-    time: string
+    time: number
 }> = ({date, time}) => {
     const [data, setData] = useState<({ relation: string, rendered: string })[]>([]);
     useEffect(() => {
@@ -13,7 +13,7 @@ const WeatherPanel: React.FC<{
             "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>" +
             "SELECT ?relation ?rendered " +
             "WHERE {" +
-            `  knmi:${date}-${time.length === 1 ? ('0' + time) : time} ?relation ?node.` +
+            `  knmi:${date}-${time < 10 ? ('0' + time) : time} ?relation ?node.` +
             "  OPTIONAL {" +
             "    ?node knmi:value ?value;" +
             "          knmi:unit ?unit." +
