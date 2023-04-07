@@ -13,6 +13,7 @@ import WeatherPanel from "./weather";
 import Select from "./select";
 import {leftPad} from "./util";
 import {LightingEffect, AmbientLight, _SunLight as SunLight} from "@deck.gl/core";
+import Holiday from "./holiday";
 
 const QUERY = query<'floors' | 'geometry' | 'name'>('mazemap',
     "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>" +
@@ -134,7 +135,7 @@ export default function App({data = QUERY, mapStyle = MAP_STYLE}) {
                 <Map reuseMaps mapLib={maplibregl} mapStyle={mapStyle} preventStyleDiffing={true}/>
             </DeckGL>
         </div>
-        <div className="bg-gray-700 text-white">
+        <div className="space-y-2 bg-gray-700 text-white">
             <div className="flex flex-row px-2 space-x-2">
                 <Select
                     value={day - 1}
@@ -195,12 +196,15 @@ export default function App({data = QUERY, mapStyle = MAP_STYLE}) {
                     ]}
                 />
             </div>
-            <hr className="my-2"/>
+            <Holiday
+                date={`${year}-${leftPad(month.toString(), '0', 2)}-${leftPad(day.toString(), '0', 2)}`}
+            />
+            <hr/>
             <WeatherPanel
                 date={`${year}-${leftPad(month.toString(), '0', 2)}-${leftPad(day.toString(), '0', 2)}`}
                 time={time}
             />
-            <hr className="my-2"/>
+            <hr/>
             <div className="text-center italic">Select a building for more information</div>
         </div>
     </div>;
