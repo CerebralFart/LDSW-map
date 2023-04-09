@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {Map} from 'react-map-gl';
 import maplibregl from 'maplibre-gl';
@@ -14,46 +14,57 @@ import Select from "./select";
 import {leftPad} from "./util";
 import {LightingEffect, AmbientLight, _SunLight as SunLight} from "@deck.gl/core";
 import Holiday from "./holiday";
+import Building from "./panels/building";
+import useFillColor from "./hooks/useFillColor";
 
-const QUERY = query<'floors' | 'geometry' | 'name'>('mazemap',
-    "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>" +
-    "PREFIX mazemap: <http://ld.sven.mol.it/mazemap#>" +
-    "SELECT ?name ?floors ?geometry WHERE {" +
-    "?bldg rdf:type mazemap:Building;" +
-    "      mazemap:floors ?floors;" +
-    "      mazemap:geometry ?geometry;" +
-    "      mazemap:name ?name." +
-    "} LIMIT 25"
-).then(data => ({
-    type: "FeatureCollection",
-    features: data.map(building => ({
-        type: "Feature",
-        geometry: JSON.parse(building.geometry),
-        properties: {
-            floors: building.name === "Horst Complex" ? 2 : parseInt(building.floors),
-            name: building.name
-        }
-    }))
-}))
+const QUERY = `\
+PREFIX dco: <https://w3id.org/dco#>
+PREFIX om2: <http://www.ontology-of-units-of-measure.org/resource/om-2/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX time: <http://www.w3.org/2006/time#>
+PREFIX ed: <http://ld.sven.mol.it/energydata#>
+PREFIX mazemap: <http://ld.sven.mol.it/mazemap#>
 
-export const COLOR_SCALE = scaleThreshold()
-    .domain([-0.6, -0.45, -0.3, -0.15, 0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1.05, 1.2])
-    .range([
-        [65, 182, 196],
-        [127, 205, 187],
-        [199, 233, 180],
-        [237, 248, 177],
-        // zero
-        [255, 255, 204],
-        [255, 237, 160],
-        [254, 217, 118],
-        [254, 178, 76],
-        [253, 141, 60],
-        [252, 78, 42],
-        [227, 26, 28],
-        [189, 0, 38],
-        [128, 0, 38]
-    ]);
+SELECT ?name ?cold ?electricity ?gas ?heat ?water ?floors ?geometry
+WHERE {
+  ?bldg dco:Building ?name
+  SERVICE <http://ld.sven.mol.it/mazemap/sparql> {
+    ?mmBldg rdf:type mazemap:Building;
+            mazemap:name ?name;
+            mazemap:floors ?floors;
+            mazemap:geometry ?geometry;
+  }
+  SERVICE <http://ld.sven.mol.it/energydata/sparql> {
+    ?measurement rdf:type ed:Measurement;
+               time:hasBeginning/time:inXSDDateTimeStamp "$DATE";
+               ed:building ?bldg.
+    OPTIONAL {
+      ?measurement ed:cold ?cNode. ?cNode ed:value ?cValue; ed:unit ?cUnit
+      SERVICE <http://ld.sven.mol.it/om2/sparql> { ?cUnit om2:symbol ?cSymbol }.
+      BIND(CONCAT(STR(?cValue), ' ', ?cSymbol) AS ?cold).
+    }
+    OPTIONAL {
+      ?measurement ed:electricity ?eNode. ?eNode ed:value ?eValue; ed:unit ?eUnit
+      SERVICE <http://ld.sven.mol.it/om2/sparql> { ?eUnit om2:symbol ?eSymbol }.
+      BIND(CONCAT(STR(?eValue), ' ', ?eSymbol) AS ?electricity).
+    }
+    OPTIONAL {
+      ?measurement ed:gas ?gNode. ?gNode ed:value ?gValue; ed:unit ?gUnit
+      SERVICE <http://ld.sven.mol.it/om2/sparql> { ?gUnit om2:symbol ?gSymbol }.
+      BIND(CONCAT(STR(?gValue), ' ', ?gSymbol) AS ?gas).
+    }
+    OPTIONAL {
+      ?measurement ed:heat ?hNode. ?hNode ed:value ?hValue; ed:unit ?hUnit
+      SERVICE <http://ld.sven.mol.it/om2/sparql> { ?hUnit om2:symbol ?hSymbol }.
+      BIND(CONCAT(STR(?hValue), ' ', ?hSymbol) AS ?heat).
+    }
+    OPTIONAL {
+      ?measurement ed:water ?wNode. ?wNode ed:value ?wValue; ed:unit ?wUnit
+      SERVICE <http://ld.sven.mol.it/om2/sparql> { ?wUnit om2:symbol ?wSymbol }.
+      BIND(CONCAT(STR(?wValue), ' ', ?wSymbol) AS ?water).
+    }
+  }
+}`
 
 const INITIAL_VIEW_STATE = {
     latitude: 52.238757,
@@ -65,15 +76,10 @@ const INITIAL_VIEW_STATE = {
 };
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json';
 
-function getTooltip({object}) {
-    return (
-        object && {
-            html: `\
-  <div><b>${object.properties.name}</b></div>
-  <div>${JSON.stringify(object.properties)}</div>
-  `
-        }
-    );
+function getTooltip({object}: { object: TBuilding }) {
+    return object && {
+        html: `<b>${object.properties.name}</b>`
+    };
 }
 
 const ambientLight = new AmbientLight({
@@ -89,53 +95,88 @@ const dirLight = new SunLight({
 const effect = new LightingEffect({ambientLight, dirLight});
 effect.shadowColor = [0, 0, 0, 0.3];
 
-export default function App({data = QUERY, mapStyle = MAP_STYLE}) {
+export default function App({mapStyle = MAP_STYLE}) {
     const [cnt, setCnt] = useState(0);
-    const [day, setDay] = useState(22);
-    const [month, setMonth] = useState(3);
+    const [buildings, setBuildings] = useState<TBuilding[]>([]);
+    const [selectedBuilding, setSelectedBuilding] = useState<null | number>(null)
+    const [day, setDay] = useState(1);
+    const [month, setMonth] = useState(1);
     const [year, setYear] = useState(2023);
     const [time, setTime] = useState(12);
 
-    useEffect(() => {
-        dirLight.timestamp = new Date(`${year}-${leftPad(month.toString(), '0', 2)}-${leftPad(day.toString(), '0', 2)}T${leftPad(time.toString(), '0', 2)}:00:00Z`)
-        setCnt(cnt + 1);
-    }, [day, month, year, time]);
+    const date = useMemo(() => new Date(`${year}-${leftPad(month.toString(), '0', 2)}-${leftPad(day.toString(), '0', 2)}T${leftPad(time.toString(), '0', 2)}:00:00Z`), [year, month, day, time]);
 
-    const layers = [
+    useEffect(() => {
+        setBuildings([]);
+        query<'name' | 'cold' | 'electricity' | 'gas' | 'heat' | 'water' | 'floors' | 'geometry'>('buildings', QUERY.replace('$DATE', date.toISOString()))
+            .then(data => data.map(({
+                                        cold,
+                                        electricity,
+                                        floors,
+                                        gas,
+                                        geometry,
+                                        heat,
+                                        name,
+                                        water,
+                                    }) => ({
+                type: "Feature",
+                geometry: JSON.parse(geometry),
+                properties: {
+                    floors: name === "Horst Complex" ? 2 : parseInt(floors),
+                    name,
+                    cold, electricity, gas, heat, water
+                }
+            })))
+            .then(buildings => setBuildings(buildings))
+    }, [date])
+
+
+    useEffect(() => {
+        dirLight.timestamp = date
+        setCnt(cnt + 1);
+    }, [date]);
+
+    const getFillColor=useFillColor();
+
+    const layers = useMemo(() => [
         // only needed when using shadows - a plane for shadows to drop on
         ground,
         new GeoJsonLayer({
             id: 'geojson',
-            data,
+            data: {
+                type: "FeatureCollection",
+                features: buildings
+            },
             opacity: 0.9,
             stroked: false,
             filled: true,
             extruded: true,
             wireframe: false,
             pickable: true,
-            getElevation: f => f.properties.floors * 10,
-            getFillColor: f => [
-                Math.random() * 255,
-                Math.random() * 255,
-                Math.random() * 255
-            ],//COLOR_SCALE(f.properties.growth),
+            getElevation: (f: TBuilding) => f.properties.floors * 10,
+            getFillColor,
         })
-    ];
+    ], [buildings]);
+
+    const onBuildingClick = useCallback((evt: { index: number }) => {
+        setSelectedBuilding(evt.index === -1 ? null : evt.index);
+    }, [buildings]);
 
     return <div className="w-full h-full flex flex-row">
-        <div className="relative flex-grow">
+        <div className="relative flex-grow flex items-center justify-center italic">
+            {buildings.length === 0 ? 'Loading building information' : ''}
             <DeckGL
                 layers={layers}
                 effects={[effect]}
                 initialViewState={INITIAL_VIEW_STATE}
                 controller={true}
                 getTooltip={getTooltip}
-                onClick={console.log}
+                onClick={onBuildingClick}
             >
-                <Map reuseMaps mapLib={maplibregl} mapStyle={mapStyle} preventStyleDiffing={true}/>
+                <Map reuseMaps mapLib={maplibregl} mapStyle={mapStyle}/>
             </DeckGL>
         </div>
-        <div className="space-y-2 bg-gray-700 text-white">
+        <div className="space-y-2 overflow-y-scroll bg-gray-700 text-white">
             <div className="flex flex-row px-2 space-x-2">
                 <Select
                     value={day - 1}
@@ -205,7 +246,14 @@ export default function App({data = QUERY, mapStyle = MAP_STYLE}) {
                 time={time}
             />
             <hr/>
-            <div className="text-center italic">Select a building for more information</div>
+            {selectedBuilding === null
+                ? (<div className="pb-2 text-center italic">
+                        Select a building for more information
+                    </div>
+                )
+                : <Building building={buildings[selectedBuilding]}/>
+            }
+
         </div>
     </div>;
 }

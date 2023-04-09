@@ -6,6 +6,7 @@
     "build": "vite build"
   },
   "dependencies": {
+    "@cerebralfart/cookies": "^0.3.0",
     "@deck.gl/core": "^8.9.6",
     "@deck.gl/layers": "^8.9.6",
     "@deck.gl/react": "^8.9.6",

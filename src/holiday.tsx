@@ -12,7 +12,7 @@ const Holiday: React.FC<{
     }, [date])
 
     useEffect(() => {
-        query("holidays",
+        query<'holiday' | 'compulsory' | 'start' | 'end'>("holidays",
             "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>" +
             "PREFIX holiday: <http://ld.sven.mol.it/holidays#>" +
             "PREFIX time: <http://www.w3.org/2006/time#>" +
