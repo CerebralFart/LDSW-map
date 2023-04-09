@@ -1,3 +1,7 @@
+declare module '*.png'{
+    const value: string;
+    export default value;
+}
 declare module 'use-click-away' {
     import React from "react";
 

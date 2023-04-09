@@ -1,4 +1,9 @@
 import React, {useEffect, useState} from "react";
+import cold from '../img/cold.png';
+import electricity from '../img/electricity.png';
+import gas from '../img/gas.png';
+import heat from '../img/heat.png';
+import water from '../img/water.png';
 import query from "../query";
 
 type TStatic = {
@@ -34,30 +39,38 @@ const Building: React.FC<{
         </h1>
         {staticData ? <p className="text-center italic">{staticData.address}, {staticData.zipCode}        </p> : null}
 
-        <table>
-            <tbody>
-            {building.properties.cold ? <tr>
-                <td>Cold</td>
-                <td className="pl-2">{building.properties.cold}</td>
-            </tr> : ''}
-            {building.properties.electricity ? <tr>
-                <td>Electricity</td>
-                <td className="pl-2">{building.properties.electricity}</td>
-            </tr> : ''}
-            {building.properties.gas ? <tr>
-                <td>Gas</td>
-                <td className="pl-2">{building.properties.gas}</td>
-            </tr> : ''}
-            {building.properties.heat ? <tr>
-                <td>Heat</td>
-                <td className="pl-2">{building.properties.heat}</td>
-            </tr> : ''}
-            {building.properties.water ? <tr>
-                <td>Water</td>
-                <td className="pl-2">{building.properties.water}</td>
-            </tr> : ''}
-            </tbody>
-        </table>
+        <div className="mt-4 flex flex-row space-x-4 justify-center">
+            {building.properties.cold ? (
+                <div className="flex flex-col items-center">
+                    <img className="h-12" src={cold} alt="Cold circle usage"/>
+                    <p className="mt-2">{building.properties.cold}</p>
+                </div>
+            ) : ''}
+            {building.properties.electricity ? (
+                <div className="flex flex-col items-center">
+                    <img className="h-12" src={electricity} alt="Electricity usage"/>
+                    <p className="mt-2">{building.properties.electricity}</p>
+                </div>
+            ) : ''}
+            {building.properties.gas ? (
+                <div className="flex flex-col items-center">
+                    <img className="h-12" src={gas} alt="Gas usage"/>
+                    <p className="mt-2">{building.properties.gas}</p>
+                </div>
+            ) : ''}
+            {building.properties.heat ? (
+                <div className="flex flex-col items-center">
+                    <img className="h-12" src={heat} alt="Heating usage"/>
+                    <p className="mt-2">{building.properties.heat}</p>
+                </div>
+            ) : ''}
+            {building.properties.water ? (
+                <div className="flex flex-col items-center">
+                    <img className="h-12" src={water} alt="Water usage"/>
+                    <p className="mt-2">{building.properties.water}</p>
+                </div>
+            ) : ''}
+        </div>
     </div>
 };
 
