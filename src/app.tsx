@@ -101,7 +101,7 @@ export default function App({mapStyle = MAP_STYLE}) {
     const [selectedBuilding, setSelectedBuilding] = useState<null | number>(null)
     const [day, setDay] = useState(1);
     const [month, setMonth] = useState(1);
-    const [year, setYear] = useState(2023);
+    const [year, setYear] = useState(2022);
     const [time, setTime] = useState(12);
 
     const date = useMemo(() => new Date(`${year}-${leftPad(month.toString(), '0', 2)}-${leftPad(day.toString(), '0', 2)}T${leftPad(time.toString(), '0', 2)}:00:00Z`), [year, month, day, time]);
