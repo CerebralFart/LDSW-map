@@ -108,6 +108,7 @@ export default function App({mapStyle = MAP_STYLE}) {
 
     useEffect(() => {
         setBuildings([]);
+        setSelectedBuilding(null);
         query<'name' | 'cold' | 'electricity' | 'gas' | 'heat' | 'water' | 'floors' | 'geometry'>('buildings', QUERY.replace('$DATE', date.toISOString()))
             .then(data => data.map(({
                                         cold,
@@ -136,7 +137,7 @@ export default function App({mapStyle = MAP_STYLE}) {
         setCnt(cnt + 1);
     }, [date]);
 
-    const getFillColor=useFillColor();
+    const getFillColor = useFillColor();
 
     const layers = useMemo(() => [
         // only needed when using shadows - a plane for shadows to drop on
